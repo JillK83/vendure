@@ -86,6 +86,7 @@ export function mergeHiddenWidgetIds(
 export function buildInitialWidgetState(
     settings: Pick<UserSettings, 'widgetInstances' | 'widgetLayout' | 'hiddenWidgets'>,
     registered: Array<[string, DashboardWidgetDefinition]>,
+    options: { someWidgetsFiltered?: boolean } = {},
 ): InitialWidgetState {
     // Saved instances are the source of truth; the legacy `widgetLayout` record is read only
     // as a fallback so existing single-instance layouts migrate transparently.
@@ -93,11 +94,13 @@ export function buildInitialWidgetState(
     const legacyLayouts = settings.widgetLayout ?? {};
     const hiddenIds = new Set(settings.hiddenWidgets ?? []);
 
-    // Honor defaultSize.x/y hints only on a truly fresh layout — no saved instances and no
-    // legacy layout entries. Once any widget has been explicitly positioned, new widgets fall
-    // back to the auto-packer so they land in the first free slot rather than a stale hint.
-    const hasNoSavedLayout =
-        settings.widgetInstances === undefined && settings.widgetLayout === undefined;
+    // The defaultSize.x/y positions describe one layout of the full widget set on an empty grid.
+    // They are used only when the user has no saved instances or legacy layout entries, and no
+    // widget was filtered out by permissions. Otherwise each new widget goes to the first free slot.
+    const useDefaultPositions =
+        settings.widgetInstances === undefined &&
+        settings.widgetLayout === undefined &&
+        !options.someWidgetsFiltered;
 
     const visible: DashboardWidgetInstance[] = [];
     const hidden: DashboardWidgetInstance[] = [];
@@ -143,7 +146,7 @@ export function buildInitialWidgetState(
             const hasOverlap = occupiedLayouts.some(occupied =>
                 layoutsOverlap(candidateLayout, occupied),
             );
-            if (!hasNoSavedLayout || isOutOfBounds || hasOverlap) {
+            if (!useDefaultPositions || isOutOfBounds || hasOverlap) {
                 const pos = findNextAvailablePosition(
                     { ...candidateLayout, y: 0 },
                     occupiedLayouts,

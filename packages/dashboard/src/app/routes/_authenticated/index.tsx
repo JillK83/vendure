@@ -121,13 +121,16 @@ function DashboardPage() {
         if (!settingsReady || editModeRef.current) {
             return;
         }
-        const registered = getVisibleDashboardWidgets().filter(([, widget]) => {
+        const visibleWidgets = getVisibleDashboardWidgets();
+        const registered = visibleWidgets.filter(([, widget]) => {
             if (!widget.requiresPermissions || widget.requiresPermissions.length === 0) {
                 return true;
             }
             return hasPermissions(widget.requiresPermissions);
         });
-        const state = buildInitialWidgetState(settingsRef.current, registered);
+        const state = buildInitialWidgetState(settingsRef.current, registered, {
+            someWidgetsFiltered: registered.length < visibleWidgets.length,
+        });
         setWidgets(state.visible);
         setHiddenWidgets(state.hidden);
         setLoadedWidgetIds(state.loadedWidgetIds);

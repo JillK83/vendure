@@ -218,6 +218,16 @@ describe('buildInitialWidgetState', () => {
         expect(state.visible[1].layout).toMatchObject({ x: 0, y: 6 });
     });
 
+    // #5616 — the default positions assume the full widget set, so a permission-filtered set packs from the top
+    it('uses the fallback on a fresh layout when some widgets were filtered out by permissions', () => {
+        const latestCustomers = def('latest-customers', { defaultSize: { w: 4, h: 6, x: 8, y: 13 } });
+        const state = buildInitialWidgetState(settings(), [['latest-customers', latestCustomers]], {
+            someWidgetsFiltered: true,
+        });
+
+        expect(state.visible[0].layout).toMatchObject({ x: 0, y: 0 });
+    });
+
     it('ignores persisted instances for widgets that are not registered', () => {
         const widget = def('metrics');
         const state = buildInitialWidgetState(
