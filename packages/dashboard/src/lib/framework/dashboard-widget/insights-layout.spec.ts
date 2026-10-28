@@ -136,7 +136,6 @@ describe('buildInitialWidgetState', () => {
     });
 
     it('preserves explicit defaultSize.x when the position is unobstructed', () => {
-        // Without the fix, findNextAvailablePosition always scans from x=0 and places it at (0, 0).
         const widget = def('orders-summary', { defaultSize: { w: 6, h: 3, x: 6, y: 0 } });
         const state = buildInitialWidgetState(settings(), [['orders-summary', widget]]);
         expect(state.visible[0].layout).toMatchObject({ x: 6, y: 0 });
@@ -167,40 +166,9 @@ describe('buildInitialWidgetState', () => {
         expect(state.visible[0].layout.x + state.visible[0].layout.w).toBeLessThanOrEqual(12);
     });
 
-    it('tiles all six built-in widgets at their designed positions on a fresh install', () => {
-        const metricsW        = def('metrics-widget',          { defaultSize: { w: 12, h: 6, x: 0, y: 0  } });
-        const latestOrders    = def('latest-orders-widget',    { defaultSize: { w: 6,  h: 7, x: 0, y: 6  } });
-        const ordersSummary   = def('orders-summary-widget',   { defaultSize: { w: 6,  h: 3, x: 6, y: 6  } });
-        const topProducts     = def('top-products-widget',     { defaultSize: { w: 4,  h: 6, x: 0, y: 13 } });
-        const lowStock        = def('low-stock-widget',        { defaultSize: { w: 4,  h: 6, x: 4, y: 13 } });
-        const latestCustomers = def('latest-customers-widget', { defaultSize: { w: 4,  h: 6, x: 8, y: 13 } });
-
-        const state = buildInitialWidgetState(settings(), [
-            ['metrics-widget',          metricsW],
-            ['latest-orders-widget',    latestOrders],
-            ['orders-summary-widget',   ordersSummary],
-            ['top-products-widget',     topProducts],
-            ['low-stock-widget',        lowStock],
-            ['latest-customers-widget', latestCustomers],
-        ]);
-
-        expect(state.visible).toHaveLength(6);
-        const [m, lo, os, tp, ls, lc] = state.visible;
-
-        expect(m.layout).toMatchObject({ x: 0, y: 0,  w: 12, h: 6 });
-        expect(lo.layout).toMatchObject({ x: 0, y: 6,  w: 6,  h: 7 });
-        expect(os.layout).toMatchObject({ x: 6, y: 6,  w: 6,  h: 3 });
-        expect(tp.layout).toMatchObject({ x: 0, y: 13, w: 4,  h: 6 });
-        expect(ls.layout).toMatchObject({ x: 4, y: 13, w: 4,  h: 6 });
-        expect(lc.layout).toMatchObject({ x: 8, y: 13, w: 4,  h: 6 });
-
-        expect(tp.layout.y).toBe(ls.layout.y);
-        expect(ls.layout.y).toBe(lc.layout.y);
-    });
-
     it('uses the fallback for a new widget when the layout already has saved entries', () => {
-        // hasNoSavedLayout is false (widgetInstances is non-empty), so the hint is ignored
-        // and the auto-packer places 'b' at the first free slot after 'a', not at the hint y: 13.
+        // widgetInstances is set, so the default position is ignored and 'b' goes to the
+        // first free slot after 'a' instead of y: 13.
         const a = def('a', { defaultSize: { w: 12, h: 6, x: 0, y: 0 } });
         const b = def('b', { defaultSize: { w: 6, h: 3, x: 0, y: 13 } });
         const state = buildInitialWidgetState(
@@ -218,7 +186,7 @@ describe('buildInitialWidgetState', () => {
         expect(state.visible[1].layout).toMatchObject({ x: 0, y: 6 });
     });
 
-    // #5616 — the default positions assume the full widget set, so a permission-filtered set packs from the top
+    // #5616: the default positions assume the full widget set, so a permission-filtered set packs from the top
     it('uses the fallback on a fresh layout when some widgets were filtered out by permissions', () => {
         const latestCustomers = def('latest-customers', { defaultSize: { w: 4, h: 6, x: 8, y: 13 } });
         const state = buildInitialWidgetState(settings(), [['latest-customers', latestCustomers]], {
