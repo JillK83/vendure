@@ -153,17 +153,17 @@ describe('buildInitialWidgetState', () => {
     });
 
     it('falls back when defaultSize.x equals the column count (widget would start outside grid)', () => {
-        // x: 12 on a 12-col grid is out of bounds — no column 12 exists (0-indexed).
+        // Columns are 0-indexed, so x: 12 starts outside a 12-column grid.
         const widget = def('w', { defaultSize: { w: 4, h: 3, x: 12, y: 0 } });
         const state = buildInitialWidgetState(settings(), [['w', widget]]);
-        expect(state.visible[0].layout.x + state.visible[0].layout.w).toBeLessThanOrEqual(12);
+        expect(state.visible[0].layout).toMatchObject({ x: 0, y: 0 });
     });
 
     it('falls back when defaultSize x + w exceeds the column count', () => {
         // x: 10, w: 4 → occupies columns 10–13, which overflows a 12-col grid.
         const widget = def('w', { defaultSize: { w: 4, h: 3, x: 10, y: 0 } });
         const state = buildInitialWidgetState(settings(), [['w', widget]]);
-        expect(state.visible[0].layout.x + state.visible[0].layout.w).toBeLessThanOrEqual(12);
+        expect(state.visible[0].layout).toMatchObject({ x: 0, y: 0 });
     });
 
     it('uses the fallback for a new widget when the layout already has saved entries', () => {
