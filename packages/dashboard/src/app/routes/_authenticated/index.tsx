@@ -112,6 +112,8 @@ function DashboardPage() {
     editModeRef.current = editMode;
     const widgetsRef = useRef(widgets);
     widgetsRef.current = widgets;
+    const loadedWidgetIdsRef = useRef(loadedWidgetIds);
+    loadedWidgetIdsRef.current = loadedWidgetIds;
 
     // Deliberately not reactive to `settings.widgetInstances`: config is persisted immediately
     // via `updateWidgetInstanceConfig`, and rebuilding here on those writes would wipe out the
@@ -147,7 +149,25 @@ function DashboardPage() {
             );
             if (!editModeRef.current) {
                 const target = widgetsRef.current.find(widget => widget.id === instanceId);
-                if (target) {
+                const { widgetInstances, widgetLayout } = settingsRef.current;
+                if (target && widgetInstances === undefined && widgetLayout === undefined) {
+                    // The first saved instance turns off the default positions on the next load,
+                    // so save every visible widget at the position it is shown at now.
+                    saveWidgetInstanceLayouts(
+                        widgetsRef.current.map(widget => ({
+                            instanceId: widget.id,
+                            widgetId: widget.widgetId,
+                            layout: {
+                                x: widget.layout.x,
+                                y: widget.layout.y,
+                                w: widget.layout.w,
+                                h: widget.layout.h,
+                            },
+                            config: widget.id === instanceId ? config : widget.config,
+                        })),
+                        loadedWidgetIdsRef.current,
+                    );
+                } else if (target) {
                     updateWidgetInstanceConfig({
                         instanceId,
                         widgetId: target.widgetId,
@@ -157,7 +177,7 @@ function DashboardPage() {
                 }
             }
         },
-        [updateWidgetInstanceConfig],
+        [updateWidgetInstanceConfig, saveWidgetInstanceLayouts],
     );
 
     // Save layout when edit mode is turned off
